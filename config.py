@@ -1,2 +1,2 @@
-group_token = '90c6422f853c7295b735f36d002f6914fcfc50b3b3c37945b9a7a2402ee329e5d008e340c6d6d5e78bc66'
-user_token = 'ce1a2e63ca9e72f90bfa8466b18b9e4385a73f41fdc332b7a27a0b40794f244e20d39fdc9aa5bb41f010f'
+group_token = '#'
+user_token = '#'
