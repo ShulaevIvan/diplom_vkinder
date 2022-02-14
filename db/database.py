@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 import json
 
-database = 'postgresql://vkinder:dnweapons1513@localhost:5432/vkinder_db'
+database = 'postgresql://vkinder:dnweapons1513@localhost:5432/vkinder_db'  #параметры базы данных(Заменить на свои)
 Base = declarative_base()
 engine = sq.create_engine(database)
 Session = sessionmaker(bind=engine)
