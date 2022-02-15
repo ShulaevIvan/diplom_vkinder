@@ -88,34 +88,39 @@ class VkinderBot:
         
         response = requests.get('https://api.vk.com/method/users.get', get_param(param))
         
-        for user_info in response.json()['response']:
-            if user_info['bdate'] =='' or user_info['bdate'] == None:
-                continue
-            else:
-                clear_user['bdate'] = user_info['bdate']
-                
-            if user_info['sex'] == '' or user_info['sex'] ==0:
-                continue
-            else:
-                clear_user['sex'] = user_info['sex']
-                
-            if user_info['city']['title'] == '':
-                continue
-            else:
-                clear_user['city'] = user_info['city']
-                
-            if user_info['relation'] == 0:
-                continue
-            else:
-                clear_user['relation'] = user_info['relation']
-                
-            clear_user['id'] = user_info['id']
+        try:
             
-        if clear_user['bdate'] != False or clear_user['bdate'] != '': 
+            for user_info in response.json()['response']:
+                if user_info['bdate'] =='' or user_info['bdate'] == None:
+                    user_info['bdate'] = False
+                    continue
+                else:
+                    clear_user['bdate'] = user_info['bdate']
+                
+                if user_info['sex'] == '' or user_info['sex'] ==0:
+                    user_info['sex'] = False
+                    continue
+                else:
+                    clear_user['sex'] = user_info['sex']
+                
+                if user_info['city']['title'] == '':
+                    user_info['city']['title'] = False
+                    continue
+                else:
+                    clear_user['city'] = user_info['city']
+                
+                
+                clear_user['id'] = user_info['id']
+            
+            if clear_user['bdate'] != False or clear_user['bdate'] != '': 
                
-            clear_user['age'] = self.get_age(clear_user)
+                clear_user['age'] = self.get_age(clear_user)
         
-        return clear_user
+            return clear_user
+        
+        except:
+            
+            return False
         
         
     def get_age(self,user_obj):
@@ -237,14 +242,19 @@ class VkinderBot:
                        '            url': 'https://vk.com/id' + str(self.searching_user_id)}
                             self.file_writer_all(people)
                             write_msg(self.user_id,
-                            f'Имя  и Фамилия: {self.username}\n \n Ссылка на пользователя: @id{self.searching_user_id}',
+                                        f'Имя  и Фамилия: {self.username}\n \n Ссылка на пользователя: @id{self.searching_user_id}',
                             self.top_photos)
                 
                             return self.searching()
                         
                 elif message_text.lower() == '1':
-                    
+                    tumbler = 0
                     user_info = self.get_userinfo(self.user_id)
+                    
+                    if not user_info:
+                        write_msg(self.user_id, f'Не заполнен профиль "День рождения" или Город или Пол. Исправьте и перезапустите бота "start"')
+                        break
+                            
                     self.user_city(user_info['city']['title'])
                     self.user_name()
                     self.user_age(user_info['age'])
@@ -255,7 +265,7 @@ class VkinderBot:
                        '            url': 'https://vk.com/id' + str(self.searching_user_id)}
                     self.file_writer_all(people)
                     write_msg(self.user_id,
-                    f'Имя  и Фамилия: {self.username}\n \n Ссылка на пользователя: @id{self.searching_user_id}',
+                                f'Имя  и Фамилия: {self.username}\n \n Ссылка на пользователя: @id{self.searching_user_id}',
                     self.top_photos)
                     
                     return self.searching()
