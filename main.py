@@ -1,8 +1,11 @@
+from pprint import pprint
+from soupsieve import select
 import db.database as database
 from random import randrange
 import vk_api
 from vk_api.longpoll import VkLongPoll, VkEventType
 import requests
+from datetime import datetime
 import json
 from config import user_token, group_token
 
@@ -51,6 +54,85 @@ class VkinderBot:
             self.username = user_info['first_name'] + ' ' + user_info['last_name']
             
         return self.username
+    
+    def get_userinfo(self,user_id):
+        user_id = user_id
+        fields = ['bdate', 
+                  'city', 
+                  'sex',
+                  'status',
+                  'home_town',
+                  'country', 
+                  'nickname', 
+                  'followers_count', 
+                  'occupation', 
+                  'activities', 
+                  'home_town', 
+                  'books', 
+                  'music', 
+                  'interests', 
+                  'langs',
+                  'relation',
+                  'career',
+                  'friend_status',
+                  'group_id'
+                  ]
+        
+        param = {'user_ids':user_id,
+                'screen_name':user_id,
+                'is_closed':False,
+                'fields': ', '.join([i for i in fields])}
+        
+        clear_user = {}
+        
+        
+        response = requests.get('https://api.vk.com/method/users.get', get_param(param))
+        
+        for user_info in response.json()['response']:
+            if user_info['bdate'] =='' or user_info['bdate'] == None:
+                continue
+            else:
+                clear_user['bdate'] = user_info['bdate']
+                
+            if user_info['sex'] == '' or user_info['sex'] ==0:
+                continue
+            else:
+                clear_user['sex'] = user_info['sex']
+                
+            if user_info['city']['title'] == '':
+                continue
+            else:
+                clear_user['city'] = user_info['city']
+                
+            if user_info['relation'] == 0:
+                continue
+            else:
+                clear_user['relation'] = user_info['relation']
+                
+            clear_user['id'] = user_info['id']
+            
+        if clear_user['bdate'] != False or clear_user['bdate'] != '': 
+               
+            clear_user['age'] = self.get_age(clear_user)
+        
+        return clear_user
+        
+        
+    def get_age(self,user_obj):
+        index = 5
+        if 'bdate' in user_obj:
+            date = len(user_obj['bdate'])
+            if date == 9:
+                index = 5
+            elif date == 8:
+                index = 4
+            elif date == 10:
+                index = 6
+            age = datetime.now().year - int(user_obj['bdate'][index:])
+            
+        return int(age)
+        
+        
     
     #Все пользователи
     def file_writer_all(self, my_dict):
@@ -132,28 +214,58 @@ class VkinderBot:
     def start(self):
         
         self.user_name()
-        write_msg(self.user_id, 'В каком городе будем искать?')
+        
+        write_msg(self.user_id, 'Автопоиск: 1, Ручной поиск: 2')
         for new_event in longpoll.listen():
+            
             if new_event.type == VkEventType.MESSAGE_NEW and new_event.to_me:
-                self.user_city(new_event.message)
-                self.user_name()
-                self.user_age()
-                self.user_sex()
-                self.find_user()
-                self.get_photos()
-                people = {'vk_id': self.searching_user_id, 'user_name': self.username, 'age': self.age,
-                       'url': 'https://vk.com/id' + str(self.searching_user_id)}
-                self.file_writer_all(people)
-                write_msg(self.user_id,
-                          f'Имя  и Фамилия: {self.username}\n \n Ссылка на пользователя: @id{self.searching_user_id}',
-                          self.top_photos)
+                message_text = new_event.text
+                if message_text.lower() == '2':
+                    
+                    write_msg(self.user_id, 'В каком городе будем искать?')
+                    for new_event in longpoll.listen():
+                        if event.type == VkEventType.MESSAGE_NEW and new_event.to_me:
+                            
+                            message_text = new_event.text
+                            self.user_city(message_text)
+                            self.user_name()
+                            self.user_age()
+                            self.user_sex()
+                            self.find_user()
+                            self.get_photos()
+                            people = {'vk_id': self.searching_user_id, 'user_name': self.username, 'age': self.age,
+                       '            url': 'https://vk.com/id' + str(self.searching_user_id)}
+                            self.file_writer_all(people)
+                            write_msg(self.user_id,
+                            f'Имя  и Фамилия: {self.username}\n \n Ссылка на пользователя: @id{self.searching_user_id}',
+                            self.top_photos)
                 
-                return self.searching()
+                            return self.searching()
+                        
+                elif message_text.lower() == '1':
+                    
+                    user_info = self.get_userinfo(self.user_id)
+                    self.user_city(user_info['city']['title'])
+                    self.user_name()
+                    self.user_age(user_info['age'])
+                    self.user_sex(user_info['sex'])
+                    self.find_user()
+                    self.get_photos()
+                    people = {'vk_id': self.searching_user_id, 'user_name': self.username, 'age': self.age,
+                       '            url': 'https://vk.com/id' + str(self.searching_user_id)}
+                    self.file_writer_all(people)
+                    write_msg(self.user_id,
+                    f'Имя  и Фамилия: {self.username}\n \n Ссылка на пользователя: @id{self.searching_user_id}',
+                    self.top_photos)
+                    
+                    return self.searching()
+                        
+                    
 
 
 
     def searching(self):
-        write_msg(self.user_id, 'Понравился пользователь? Напишите да или что-то другое')
+        write_msg(self.user_id, 'Понравился пользователь? Напишите да или например далее')
         
         while True:     
             for new_event in longpoll.listen():
@@ -186,7 +298,10 @@ class VkinderBot:
                         self.file_writer_all(info)
                         write_msg(self.user_id, 'Понравился пользователь? Напишите да или что-то другое')
 
-    def user_age(self):
+    def user_age(self, age=None):
+        
+        if age != None:
+            return self.age
         
         try:
             
@@ -210,7 +325,15 @@ class VkinderBot:
             
             return self.user_age()
 
-    def user_sex(self):
+    def user_sex(self, sex=None):
+        
+        if sex != None:
+            if sex == 1:
+                self.sex = 2
+            if sex == 2:
+                self.sex == 1
+             
+            return self.sex
         
         try:
             
@@ -253,7 +376,7 @@ class VkinderBot:
 
     #костыль с offset)))
     def find_user(self):
-        
+            
         try:
             
             response = requests.get('https://api.vk.com/method/users.search',
