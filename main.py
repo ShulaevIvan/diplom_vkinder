@@ -247,7 +247,7 @@ class VkinderBot:
         except IndexError:
             
             write_msg(self.user_id, f'Некорректное значение')
-            self.start_program()
+            self.start()
             
         return self.city
 
